@@ -39,7 +39,7 @@ def text_to_speech(text: str) -> Optional[str]:
     try:
         response = client.audio.speech.with_streaming_response.create(
             model="gpt-4o-audio",
-            voice="Ash",
+            voice="nova",
             input=text
         )
 
