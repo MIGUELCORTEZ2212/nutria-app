@@ -171,7 +171,8 @@ with col_main:
             st.session_state.dialog.append({"role": "assistant", "content": respuesta})
 
             # 5) Redibujar inmediatamente
-            st.experimental_rerun()
+            st.rerun()
+
     # =================================================
     # TAB 2: VOZ (grabación nativa de Streamlit)
     # =================================================
