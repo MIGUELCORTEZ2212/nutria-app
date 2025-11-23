@@ -252,7 +252,8 @@ with col_main:
 
             # 5) Convertir respuesta a audio (solo se hace después del rerun)
             audio_out = text_to_speech(st.session_state.last_response_text, voice="alloy")
-
+            st.write("DEBUG audio_out:", audio_out)
+            
             if audio_out and os.path.exists(audio_out):
                 try:
                     # Intentar leer el archivo MP3

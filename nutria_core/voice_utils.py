@@ -10,47 +10,54 @@ client = OpenAI()
 # ======================================================
 
 def whisper_to_text(uploaded_audio) -> str:
+    """
+    Convierte audio grabado desde Streamlit en texto usando GPT-4o-mini-Transcribe.
+    """
     try:
+        # Guardar el audio temporalmente
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             tmp.write(uploaded_audio.read())
             tmp_path = tmp.name
 
+        # Modelo de transcripción correcto
         result = client.audio.transcriptions.create(
             file=open(tmp_path, "rb"),
-            model="gpt-4o-mini-transcribe"
+            model="gpt-4o-mini-transcribe",
         )
 
         os.remove(tmp_path)
         return result.text
 
     except Exception as e:
-        print("ERROR EN WHISPER:", e)
+        # Esto se verá en la consola de Streamlit
+        print("ERROR EN WHISPER:", repr(e))
         return "No pude transcribir el audio. Intenta otra vez."
 
 
 # ======================================================
-#  TEXTO → AUDIO (TTS) — versión correcta
+#  TEXTO → AUDIO MP3 (TTS)
 # ======================================================
 
 def text_to_speech(text: str, voice: str = "alloy") -> Optional[str]:
     """
-    Convierte texto a MP3 con el modelo TTS y devuelve la ruta del archivo.
+    Convierte texto a un archivo MP3 y devuelve la ruta temporal.
+    Usa el modelo gpt-4o-mini-tts y la API correcta.
     """
     try:
-        # Generar audio (regresa bytes)
-        audio_bytes = client.audio.speech.create(
+        # Llamada correcta al endpoint de TTS
+        response = client.audio.speech.create(
             model="gpt-4o-mini-tts",
-            voice=voice,
+            voice=voice,       # alloy, nova, verse, shimmer...
             input=text,
         )
 
-        # Guardar temporalmente el MP3
+        # Guardar salida en un archivo temporal .mp3
         tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-        with open(tmp_file.name, "wb") as f:
-            f.write(audio_bytes)
+        response.stream_to_file(tmp_file.name)
 
         return tmp_file.name
 
     except Exception as e:
-        print("ERROR GENERANDO AUDIO:", e)
+        # MUY IMPORTANTE: mostrar el error real en consola
+        print("ERROR GENERANDO AUDIO:", repr(e))
         return None
