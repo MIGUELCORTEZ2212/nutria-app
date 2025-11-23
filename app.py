@@ -106,7 +106,7 @@ with col_side:
 - 🔎 **Consulta alimentos**: “¿Qué tan saludable es la quinoa?”
 - 🔁 **Sustituye opciones**: “Quiero cambiar el brocoli del desayuno.”
 - 🧮 **Plan nutricional**: “Soy hombre, 32 años, 72kg, 178cm, atletismo, objetivo rendimiento.”
-- 🧂 **Quiero bajar de peso.
+- 🧂 **objetivo específico**: "Quiero bajar de peso."
         """
     )
 
