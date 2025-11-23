@@ -172,9 +172,7 @@ with col_main:
 
             # 5) Redibujar inmediatamente
             st.experimental_rerun()
-
-
-        # =================================================
+    # =================================================
     # TAB 2: VOZ (grabación nativa de Streamlit)
     # =================================================
     with tab_voice:
