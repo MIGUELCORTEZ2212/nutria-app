@@ -1,67 +1,98 @@
 import json
+from typing import List, Tuple
+
 from openai import OpenAI
 from .tools_handler import handle_tool_calls
 from .food_tools import tools
 
-class ChatEngine:
 
-    def __init__(self, api_key, model_llm, system_message, max_history=6):
+class ChatEngine:
+    """
+    Motor de conversación de NutrIA.
+
+    - Recibe el mensaje del usuario y el historial (pares user/assistant).
+    - Llama al modelo de OpenAI con las tools (function calling).
+    - Si el modelo dispara tools, las ejecuta y hace una segunda llamada.
+    - Devuelve una respuesta de texto lista para mostrar en la UI.
+    """
+
+    def __init__(
+        self,
+        api_key: str,
+        model_llm: str,
+        system_message: str,
+        max_history: int = 6,
+    ) -> None:
         self.client = OpenAI(api_key=api_key)
         self.model_llm = model_llm
         self.system_message = system_message
-        self.max_history = max_history  # limitar historial
+        self.max_history = max_history  # limitar historial para rendimiento
 
-    def _prepare_history(self, history):
+    def _prepare_history(self, history: List[Tuple[str, str]]) -> List[dict]:
         """
-        Mantiene solo los últimos N turnos para acelerar la respuesta.
+        Convierte la lista de pares (usuario, asistente) en una
+        lista de mensajes tipo OpenAI, manteniendo solo los últimos N.
         """
-        compressed = []
-        for u, a in history[-self.max_history :]:
+        compressed: List[dict] = []
+        for u, a in history[-self.max_history:]:
             compressed.append({"role": "user", "content": u})
             compressed.append({"role": "assistant", "content": a})
         return compressed
 
-    def chat(self, user_message, history):
+    def chat(self, user_message: str, history: List[Tuple[str, str]]) -> str:
         """
-        Flujo optimizado:
-        1. Prepara un historial compacto (últimos N turns)
-        2. Primera llamada al modelo
-        3. Si hay tools → ejecutarlas y hacer segunda llamada
-        4. Devuelve respuesta final
+        Flujo principal de conversación:
+
+        1. Compactar historial
+        2. Llamar al modelo con tools
+        3. Si hay tool-calls → ejecutarlas
+        4. Segunda llamada al modelo con resultados de tools
+        5. Devolver la respuesta final en texto
+
+        Maneja errores para no tumbar la app.
         """
+        try:
+            # 1) Historial compacto
+            prepared = self._prepare_history(history)
 
-        # Compactar historial
-        prepared = self._prepare_history(history)
+            # 2) Construir mensajes
+            messages: List[dict] = [
+                {"role": "system", "content": self.system_message}
+            ]
+            messages.extend(prepared)
+            messages.append({"role": "user", "content": user_message})
 
-        # Construir prompt
-        messages = [{"role": "system", "content": self.system_message}]
-        messages.extend(prepared)
-        messages.append({"role": "user", "content": user_message})
+            # 3) Primera llamada al modelo
+            response = self.client.chat.completions.create(
+                model=self.model_llm,
+                messages=messages,
+                tools=tools,
+                tool_choice="auto",
+            )
 
-        # PRIMERA LLAMADA
-        response = self.client.chat.completions.create(
-            model=self.model_llm,
-            messages=messages,
-            tools=tools,
-            tool_choice="auto"
-        )
-        msg = response.choices[0].message
+            msg = response.choices[0].message
 
-        # Si NO hay tool-calls → devolver directamente
-        if not msg.tool_calls:
-            return msg.content
+            # 4) Si NO hay tool-calls → responder directo
+            if not msg.tool_calls:
+                return msg.content or "Lo siento, no pude generar una respuesta."
 
-        # Ejecutar las tools
-        tool_msgs = handle_tool_calls(msg.tool_calls, self.client)
+            # 5) Ejecutar tools
+            tool_msgs = handle_tool_calls(msg.tool_calls, self.client)
 
-        # Añadir tool-calls al mensaje final
-        messages.append(msg)
-        messages.extend(tool_msgs)
+            # 6) Añadir al contexto y segunda llamada
+            messages.append(msg)
+            messages.extend(tool_msgs)
 
-        # SEGUNDA LLAMADA — respuesta final
-        final = self.client.chat.completions.create(
-            model=self.model_llm,
-            messages=messages
-        )
+            final = self.client.chat.completions.create(
+                model=self.model_llm,
+                messages=messages,
+            )
 
-        return final.choices[0].message.content
+            return final.choices[0].message.content or "No pude generar respuesta final."
+
+        except Exception as e:
+            # En producción no mostramos detalles, solo un mensaje amable
+            return (
+                "😔 Ocurrió un problema técnico al procesar tu solicitud. "
+                "Intenta de nuevo en unos momentos o reformula tu mensaje."
+            )

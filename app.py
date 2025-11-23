@@ -1,12 +1,10 @@
 import os
-import tempfile
 
 import streamlit as st
 from dotenv import load_dotenv
 
 from nutria_core.chat_engine import ChatEngine
 from nutria_core.voice_utils import whisper_to_text, text_to_speech
-
 
 # =====================================================
 # CONFIG BÁSICA
@@ -18,6 +16,15 @@ st.set_page_config(
     page_icon="🦦",
     layout="wide",
 )
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+if not OPENAI_API_KEY:
+    st.error(
+        "⚠️ No se encontró la variable de entorno `OPENAI_API_KEY`.\n\n"
+        "Configúrala en Streamlit Cloud o en tu entorno local para usar NutrIA."
+    )
+    st.stop()
 
 # =====================================================
 # ESTILOS (CSS)
@@ -65,10 +72,21 @@ html, body, [class*="css"] {
 if "dialog" not in st.session_state:
     # dialog = lista de dicts: {"role": "user"/"assistant", "content": "..."}
     st.session_state.dialog = []
+    # Mensaje de bienvenida inicial
+    st.session_state.dialog.append(
+        {
+            "role": "assistant",
+            "content": (
+                "👋 Hola, soy **NutrIA**.\n\n"
+                "Puedo ayudarte a analizar alimentos, sugerir sustituciones y generar "
+                "un plan nutricional basado en tus datos (edad, peso, estatura, actividad y objetivo)."
+            ),
+        }
+    )
 
 # Motor LLM + tools
 chat_engine = ChatEngine(
-    api_key=os.getenv("OPENAI_API_KEY"),
+    api_key=OPENAI_API_KEY,
     model_llm="gpt-4o-mini",
     system_message=open("system_message.txt", "r", encoding="utf-8").read(),
 )
@@ -83,7 +101,8 @@ st.markdown(
   <h3>Asistente Nutricional Inteligente</h3>
   <p style='color:#999; font-size:0.85rem; margin-top:4px;'>por: Miguel Cortez</p>
   <p style="color:#555;">
-    Composición nutricional de los alimentos. - Sustituir alimentos con opciones más saludables. - Diseñar planes nutricionales basados en tu perfil.
+    Analiza la composición nutricional de los alimentos, sugiere sustituciones más saludables
+    y diseña planes nutricionales personalizados usando IA y datos reales.
   </p>
 </div>
 """,
@@ -102,10 +121,14 @@ with col_side:
     st.markdown("### 🧭 ¿Cómo puede ayudarte NutrIA?")
     st.markdown(
         """
-- 🔎 **Consulta alimentos**: “¿Qué tan saludable es la quinoa?”
-- 🔁 **Sustituye opciones**: “Quiero cambiar el brocoli del desayuno.”
-- 🧮 **Plan nutricional**: “Soy hombre, 32 años, 72kg, 178cm, atletismo, objetivo rendimiento.”
-- 🧂 **objetivo específico**: "Quiero bajar de peso."
+- 🔎 **Consulta alimentos**  
+  Ej: “¿Qué tan saludable es la quinoa?”
+- 🔁 **Sustituir opciones**  
+  Ej: “Quiero algo mejor que el pan blanco para el desayuno.”
+- 🧮 **Plan nutricional**  
+  Ej: “Soy hombre, 32 años, 72 kg, 178 cm, triatlón, objetivo rendimiento.”
+- 🎯 **Objetivos específicos**  
+  Ej: “Quiero bajar mi consumo de azúcar.” / “Quiero subir proteína.”
         """
     )
 
@@ -119,8 +142,8 @@ with col_side:
     st.markdown("### ℹ️ Tips de uso")
     st.markdown(
         """
-- Mientras más contexto des (edad, peso, objetivo, alergias), **mejores recomendaciones**.
-- Puedes hablar en lenguaje natural, no hace falta usar palabras técnicas.
+- Mientras más contexto des (edad, peso, objetivo, entrenamientos), **mejores recomendaciones**.
+- Puedes hablar en lenguaje natural, no hace falta usar términos técnicos.
 - Pruéba la pestaña **🎤 Voz** si prefieres hablar en lugar de escribir.
         """
     )
@@ -152,10 +175,12 @@ with col_main:
         user_input = st.chat_input("Escribe tu mensaje...")
 
         if user_input:
-            # 1) Mostrar mensaje del usuario
-            st.session_state.dialog.append({"role": "user", "content": user_input})
+            # 1) Guardar mensaje del usuario
+            st.session_state.dialog.append(
+                {"role": "user", "content": user_input}
+            )
 
-            # 2) Construir historial como pares
+            # 2) Construir historial como pares (user, assistant)
             history_pairs = []
             last_user = None
             for m in st.session_state.dialog:
@@ -165,11 +190,13 @@ with col_main:
                     history_pairs.append((last_user, m["content"]))
                     last_user = None
 
-             # 3) Llamar al motor
+            # 3) Llamar al motor de chat
             respuesta = chat_engine.chat(user_input, history_pairs)
 
             # 4) Guardar respuesta
-            st.session_state.dialog.append({"role": "assistant", "content": respuesta})
+            st.session_state.dialog.append(
+                {"role": "assistant", "content": respuesta}
+            )
 
             # 5) Redibujar inmediatamente
             st.rerun()
@@ -180,7 +207,7 @@ with col_main:
     with tab_voice:
         st.subheader("🎤 Habla con NutrIA")
 
-        st.markdown("### 🎙️ Grabar audio desde el micrófono")
+        st.markdown("### 🎙️ Graba audio desde el micrófono")
         audio_input = st.audio_input("Pulsa el botón para grabar tu voz")
 
         if audio_input is not None:
@@ -202,11 +229,17 @@ with col_main:
 
             respuesta = chat_engine.chat(text, history_pairs)
             st.session_state.dialog.append({"role": "user", "content": text})
-            st.session_state.dialog.append({"role": "assistant", "content": respuesta})
+            st.session_state.dialog.append(
+                {"role": "assistant", "content": respuesta}
+            )
 
             st.success(f"🤖 Respuesta: {respuesta}")
 
             audio_out = text_to_speech(respuesta)
-            st.audio(audio_out)
-
-
+            if audio_out:
+                st.audio(audio_out)
+            else:
+                st.warning(
+                    "No pude generar audio de la respuesta. "
+                    "Puedes leerla directamente en el chat."
+                )

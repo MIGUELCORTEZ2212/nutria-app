@@ -2,7 +2,28 @@ import pandas as pd
 from pydantic import BaseModel, Field
 from typing import Optional
 
+# =========================================================
+# Carga de datos
+# =========================================================
+
 df = pd.read_csv("dataset_limpio.csv")
+
+# Garantizamos que las columnas críticas existan y sean numéricas
+NUMERIC_COLS = [
+    "energia_kcal",
+    "proteina_g",
+    "lipidos_g",
+    "hidratos_carbono_g",
+    "azucar_g",
+    "sodio_g",
+    "fibra_g",
+]
+
+for col in NUMERIC_COLS:
+    if col not in df.columns:
+        df[col] = 0
+    df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+
 
 # =========================================================
 # Pydantic Models
@@ -31,62 +52,77 @@ class FoodInfoScore(FoodInfo):
 # =========================================================
 
 def buscar_alimento_por_nombre(nombre: str):
+    """
+    Busca el primer alimento cuyo nombre contenga el string dado (case-insensitive).
+    Devuelve una fila (pd.Series) o None si no hay coincidencias.
+    """
     candidatos = df[df["alimento"].str.contains(nombre, case=False, na=False)]
     return candidatos.iloc[0] if not candidatos.empty else None
 
 
-def construir_foodinfo(fila):
+def construir_foodinfo(fila) -> FoodInfo:
+    """
+    Construye un objeto FoodInfo a partir de una fila del DataFrame.
+    """
     return FoodInfo(
-        alimento=fila["alimento"],
-        categoria=fila["categoria"],
-        energia_kcal=float(fila["energia_kcal"]),
-        proteina_g=float(fila["proteina_g"]),
-        lipidos_g=float(fila["lipidos_g"]),
-        hidratos_carbono_g=float(fila["hidratos_carbono_g"]),
-        azucar_g=float(fila["azucar_g"]),
-        sodio_g=float(fila["sodio_g"]),
-        fibra_g=float(fila["fibra_g"]),
+        alimento=str(fila.get("alimento", "")),
+        categoria=str(fila.get("categoria", "")),
+        energia_kcal=float(fila.get("energia_kcal", 0) or 0),
+        proteina_g=float(fila.get("proteina_g", 0) or 0),
+        lipidos_g=float(fila.get("lipidos_g", 0) or 0),
+        hidratos_carbono_g=float(fila.get("hidratos_carbono_g", 0) or 0),
+        azucar_g=float(fila.get("azucar_g", 0) or 0),
+        sodio_g=float(fila.get("sodio_g", 0) or 0),
+        fibra_g=float(fila.get("fibra_g", 0) or 0),
         medida=fila.get("medida"),
-        cantidad=fila.get("cantidad")
+        cantidad=float(fila.get("cantidad", 0) or 0)
+        if "cantidad" in fila else None,
     )
 
 
-def calcular_nutria_score(fila):
+def calcular_nutria_score(fila) -> float:
     """
-    Calcula el NutrIA Score robusto, protegiendo contra valores faltantes.
+    Calcula el NutrIA Score de forma robusta, protegiendo contra valores faltantes.
+
+    Componentes:
+    - Proteína (25%): positivo
+    - Fibra (20%): positivo
+    - Grasas totales (5%): se favorece menor grasa
+    - Carbohidratos (5%): se favorece presencia moderada
+    - Azúcar (20%): penalización
+    - Sodio (15%): penalización
+    - Energía kcal (10%): penalización por alta densidad
     """
 
-    # Obtener valores con fallback seguro
-    prot   = float(fila.get("proteina_g", 0) or 0)
-    fibra  = float(fila.get("fibra_g", 0) or 0)
+    prot = float(fila.get("proteina_g", 0) or 0)
+    fibra = float(fila.get("fibra_g", 0) or 0)
     azucar = float(fila.get("azucar_g", 0) or 0)
-    sodio  = float(fila.get("sodio_g", 0) or 0)
-    kcal   = float(fila.get("energia_kcal", 0) or 0)
-
-    # Nuevos nutrientes
+    sodio = float(fila.get("sodio_g", 0) or 0)
+    kcal = float(fila.get("energia_kcal", 0) or 0)
     lipidos = float(fila.get("lipidos_g", 0) or 0)
-    carbs   = float(fila.get("hidratos_carbono_g", 0) or 0)
+    carbs = float(fila.get("hidratos_carbono_g", 0) or 0)
 
-    # ---------- Score positivo ----------
-    score = 0
-    score += min(prot / 30, 1) * 25          # Proteína
-    score += min(fibra / 10, 1) * 20         # Fibra
-    score += min((10 - lipidos) / 10, 1) * 5 # Grasas moderadas
-    score += min(carbs / 50, 1) * 5          # Carbohidratos de calidad
+    # ---- Componentes positivos ----
+    score = 0.0
+    score += min(prot / 30.0, 1.0) * 25.0        # Proteína
+    score += min(fibra / 10.0, 1.0) * 20.0       # Fibra
+    score += max(0.0, (10.0 - lipidos) / 10.0) * 5.0  # Menos grasa es mejor
+    score += min(carbs / 50.0, 1.0) * 5.0        # Carbohidratos "útiles"
 
-    # ---------- Penalizaciones ----------
-    score += max(0, 1 - (azucar / 20)) * 20  # Azúcar
-    score += max(0, 1 - (sodio / 800)) * 15  # Sodio
-    score += max(0, 1 - (kcal / 600)) * 10   # Calorías
+    # ---- Penalizaciones (invertidos) ----
+    score += max(0.0, 1.0 - (azucar / 20.0)) * 20.0   # Azúcar
+    score += max(0.0, 1.0 - (sodio / 800.0)) * 15.0   # Sodio
+    score += max(0.0, 1.0 - (kcal / 600.0)) * 10.0    # Kcal
 
+    # Clamp a [0, 100]
+    score = max(0.0, min(score, 100.0))
     return round(score, 1)
 
 
-    # Normalizar a 100
-    return round((total / 110) * 100, 1)
-
-def construir_foodinfo_score(fila):
+def construir_foodinfo_score(fila) -> FoodInfoScore:
+    """
+    Construye un FoodInfoScore (detalle del alimento + NutrIA Score).
+    """
     base = construir_foodinfo(fila)
     score = calcular_nutria_score(fila)
     return FoodInfoScore(**base.model_dump(), nutria_score=score)
-
