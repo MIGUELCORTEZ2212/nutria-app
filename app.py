@@ -81,7 +81,7 @@ st.markdown(
 <div style="text-align:center; margin-bottom: 1rem;">
   <h1>🥑 NutrIA</h1>
   <h3>Asistente Nutricional Inteligente</h3>
-  <p style='color:#999; font-size:0.85rem; margin-top:4px;'>by Miguel Cortez</p>
+  <p style='color:#999; font-size:0.85rem; margin-top:4px;'>por: Miguel Cortez</p>
   <p style="color:#555;">
     Composición nutricional de los alimentos. - Sustituir alimentos con opciones más saludables. - Diseñar planes nutricionales basados en tu perfil.
   </p>
