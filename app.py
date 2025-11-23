@@ -209,12 +209,18 @@ with col_main:
         st.markdown("### 🎙️ Grabar audio desde el micrófono")
         audio_input = st.audio_input("Pulsa el botón para grabar tu voz")
 
-        if audio_input is not None:
+        # Mover la generación de respuesta a una función que se llama cuando hay audio nuevo
+        if audio_input is not None and 'audio_processed' not in st.session_state:
+            # Añadir un indicador de que el audio ya fue procesado en esta corrida
+            # Esto es solo para que el flujo de procesamiento se ejecute una sola vez
+            st.session_state.audio_processed = True
+
             st.success("Audio grabado correctamente. Procesando...")
 
             # Convertir audio a texto con Whisper
             text = whisper_to_text(audio_input)
-            st.info(f"📝 Transcripción: {text}")
+            st.session_state.transcription = text # Guardar transcripción en la sesión
+            st.info(f"📝 Transcripción: {st.session_state.transcription}")
 
             # Construcción de historial como pares
             history_pairs = []
@@ -228,13 +234,24 @@ with col_main:
 
             # Chat LLM
             respuesta = chat_engine.chat(text, history_pairs)
+
+            # 1) Guardar en el historial (en el orden correcto)
             st.session_state.dialog.append({"role": "user", "content": text})
             st.session_state.dialog.append({"role": "assistant", "content": respuesta})
 
-            st.success(f"🤖 Respuesta: {respuesta}")
+            # 2) Guardar la respuesta para la generación de audio
+            st.session_state.last_response_text = respuesta
 
-            # Convertir respuesta a audio
-            audio_out = text_to_speech(respuesta, voice="alloy")
+            # 3) Forzar el redibujado
+            st.rerun()
+
+        # Lógica de visualización y audio después del rerun
+        if 'last_response_text' in st.session_state:
+            # 4) Mostrar la respuesta en texto
+            st.success(f"🤖 Respuesta: {st.session_state.last_response_text}")
+
+            # 5) Convertir respuesta a audio (solo se hace después del rerun)
+            audio_out = text_to_speech(st.session_state.last_response_text, voice="alloy")
 
             if audio_out and os.path.exists(audio_out):
                 try:
@@ -245,3 +262,10 @@ with col_main:
                     st.error(f"No pude reproducir el audio: {e}")
             else:
                 st.warning("No pude generar audio de la respuesta...")
+
+            # 6) Limpiar las variables temporales para la siguiente interacción
+            del st.session_state.last_response_text
+            if 'audio_processed' in st.session_state:
+                del st.session_state.audio_processed
+            if 'transcription' in st.session_state:
+                del st.session_state.transcription
