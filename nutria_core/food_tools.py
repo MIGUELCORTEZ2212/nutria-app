@@ -74,3 +74,26 @@ tools = [
     {
         "type": "function",
         "function": {
+            "name": "get_nutrition_recommendations",
+            "description": "Recomienda alimentos según un objetivo nutricional.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "objetivo": {"type": "string"},
+                    "categoria": {"type": "string", "nullable": True},
+                    "alimento_base": {"type": "string", "nullable": True},
+                    "top_k": {"type": "integer", "default": 5}
+                },
+                "required": ["objetivo"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generar_plan_nutricional",
+            "description": "Genera un plan nutricional basado en TMB/TDEE.",
+            "parameters": DatosPaciente.model_json_schema()
+        }
+    }
+]
