@@ -36,13 +36,14 @@ def get_nutrition_recommendations(objetivo, categoria=None, alimento_base=None, 
         data = data[~data["alimento"].str.contains(alimento_base, case=False)]
 
     # Orden por NutrIA score
-    data["nutria_score"] = data.apply(lambda x: calcular_nutria_score(x), axis=1)
-    data = data.sort_values("nutria_score", ascending=False)
+    # Asegurar columnas antes de calcular score
+    for col in ["proteina_g", "fibra_g", "azucar_g", "sodio_g", "energia_kcal", 
+            "lipidos_g", "hidratos_carbono_g"]:
+        if col not in data.columns:
+            data[col] = 0
+        data[col] = data[col].fillna(0)
 
-    # Top K resultados
-    top = data.head(top_k)
-    recomendaciones = [construir_foodinfo_score(row) for _, row in top.iterrows()]
-
+    data["nutria_score"] = data.apply(lambda fila: calcular_nutria_score(fila), axis=1)
     payload = {
         "objetivo": objetivo,
         "alimento_base": alimento_base,
