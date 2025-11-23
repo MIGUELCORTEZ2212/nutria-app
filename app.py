@@ -15,7 +15,7 @@ load_dotenv()
 
 st.set_page_config(
     page_title="NutrIA – Asistente Nutricional Inteligente",
-    page_icon="🥑",
+    page_icon="🦦",
     layout="wide",
 )
 
