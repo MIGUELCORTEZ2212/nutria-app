@@ -255,12 +255,23 @@ with col_main:
 
             if audio_out and os.path.exists(audio_out):
                 try:
+                    # Intentar leer el archivo MP3
                     with open(audio_out, "rb") as f:
                         audio_bytes = f.read()
+                
+                    # Reproducir el audio en Streamlit
                     st.audio(audio_bytes, format="audio/mp3")
+                
                 except Exception as e:
+                    # Si la lectura o reproducción falla
                     st.error(f"No pude reproducir el audio: {e}")
+            
+                finally:
+                    # ¡CRUCIAL! Asegurar la eliminación del archivo después de intentar leerlo
+                    os.remove(audio_out) 
+                
             else:
+                # Si text_to_speech devolvió None o el archivo no existe
                 st.warning("No pude generar audio de la respuesta...")
 
             # 6) Limpiar las variables temporales para la siguiente interacción
