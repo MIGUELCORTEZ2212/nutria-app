@@ -237,7 +237,7 @@ with col_main:
         # Generar audio TTS
         audio_out = text_to_speech(respuesta, voice="alloy")
 
-        # 🔥 REPRODUCTOR COMPATIBLE CON STREAMLIT CLOUD
+        # 🔥 Reproducir audio correctamente en Streamlit Cloud
         if audio_out:
             try:
                 with open(audio_out, "rb") as f:
