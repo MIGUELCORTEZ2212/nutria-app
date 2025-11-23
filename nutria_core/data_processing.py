@@ -13,6 +13,8 @@ class FoodInfo(BaseModel):
     categoria: str
     energia_kcal: float
     proteina_g: float
+    lipidos_g: float
+    hidratos_carbono_g: float
     azucar_g: float
     sodio_g: float
     fibra_g: float
@@ -39,6 +41,8 @@ def construir_foodinfo(fila):
         categoria=fila["categoria"],
         energia_kcal=float(fila["energia_kcal"]),
         proteina_g=float(fila["proteina_g"]),
+        lipidos_g=float(fila["lipidos_g"]),
+        hidratos_carbono_g=float(fila["hidratos_carbono_g"]),
         azucar_g=float(fila["azucar_g"]),
         sodio_g=float(fila["sodio_g"]),
         fibra_g=float(fila["fibra_g"]),
@@ -48,14 +52,37 @@ def construir_foodinfo(fila):
 
 
 def calcular_nutria_score(fila):
-    score = 0
-    score += min(fila["proteina_g"] / 30, 1) * 30
-    score += min(fila["fibra_g"] / 10, 1) * 20
-    score += max(0, 1 - (fila["azucar_g"] / 20)) * 25
-    score += max(0, 1 - (fila["sodio_g"] / 800)) * 15
-    score += max(0, 1 - (fila["energia_kcal"] / 600)) * 10
-    return round(score, 1)
+    proteina = fila.get("proteina_g", 0) or 0
+    fibra = fila.get("fibra_g", 0) or 0
+    azucar = fila.get("azucar_g", 0) or 0
+    sodio = fila.get("sodio_g", 0) or 0
+    energia = fila.get("energia_kcal", 0) or 0
+    carbs = fila.get("hidratos_carbono_g", 0) or 0
+    lipidos = fila.get("lipidos_g", 0) or 0
 
+    # COMPONENTES POSITIVOS
+    score_proteina = min(proteina / 30, 1) * 30
+    score_fibra = min(fibra / 10, 1) * 15
+    score_carbs = max(0, 1 - (carbs / 60)) * 10  # carbos moderados = mejor puntuación
+
+    # COMPONENTES NEGATIVOS
+    score_azucar = max(0, 1 - (azucar / 20)) * 20
+    score_sodio = max(0, 1 - (sodio / 800)) * 10
+    score_kcal = max(0, 1 - (energia / 600)) * 10
+    score_lipidos = max(0, 1 - (lipidos / 30)) * 15
+
+    total = (
+        score_proteina +
+        score_fibra +
+        score_carbs +
+        score_azucar +
+        score_sodio +
+        score_kcal +
+        score_lipidos
+    )
+
+    # Normalizar a 100
+    return round((total / 110) * 100, 1)
 
 def construir_foodinfo_score(fila):
     base = construir_foodinfo(fila)
