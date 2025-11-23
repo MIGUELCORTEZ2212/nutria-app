@@ -7,3 +7,6 @@ numpy
 scikit-learn
 matplotlib
 soundfile
+streamlit-audiorecorder
+pydub
+
