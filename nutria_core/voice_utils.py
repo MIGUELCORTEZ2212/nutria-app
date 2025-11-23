@@ -24,7 +24,7 @@ def text_to_speech(text):
     """Convierte texto en audio MP3 usando TTS."""
     speech = client.audio.speech.create(
         model="gpt-4o-mini-tts",
-        voice="alloy",
+        voice="Ash",
         input=text
     )
 
