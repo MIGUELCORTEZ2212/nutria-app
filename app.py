@@ -128,7 +128,7 @@ with col_side:
 # COLUMNA IZQUIERDA: CHAT + VOZ
 # -----------------------------------------------------
 with col_main:
-    tab_chat, tab_voice, tab_history = st.tabs(["💬 Chat", "🎤 Voz"])
+    tab_chat, tab_voice = st.tabs(["💬 Chat", "🎤 Voz"])
 
     # =================================================
     # TAB 1: CHAT (con st.chat_input → Enter para enviar)
