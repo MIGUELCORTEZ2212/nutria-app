@@ -16,7 +16,7 @@ def get_food_info(nombre_alimento: str):
     fila = buscar_alimento_por_nombre(nombre_alimento)
     if fila is None:
         return json.dumps({"error": f"No encontré '{nombre_alimento}'"}, ensure_ascii=False)
-    info = construir_foodinfo(fila)
+    info = construir_foodinfo_score(fila)
     return info.model_dump_json(ensure_ascii=False)
 
 
