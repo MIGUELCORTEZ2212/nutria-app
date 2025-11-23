@@ -127,6 +127,30 @@ Cuando el usuario no lo diga claro, infiere si busca:
 - Mejorar alimentación general
 
 Indica al inicio de tu respuesta: “Objetivo detectado: …” si lo puedes inferir.
+
+Si el usuario pide:
+- “el score más alto”
+- “la opción más saludable”
+- “qué alimento es mejor”
+- “top score”
+- “recomiéndame lo mejor”
+- “dame el mejor alimento de…”
+- “qué fruta tiene mejor score”
+- “qué es lo más saludable”
+
+Debes:
+1) Interpretar el objetivo como: **"mejorar alimentación general"**
+2) Llamar SIEMPRE a la tool get_nutrition_recommendations con:
+   - objetivo = "mejorar alimentación general"
+   - categoria = la categoría mencionada si existe (ej. "fruta")
+   - top_k = 3
+3) Nunca inventar respuestas si el usuario está pidiendo rankings.
+4) Si el usuario menciona frutas o una fruta específica → categoria="fruta"
+
+SINÓNIMOS DE FRUTA:
+["fruta", "frutas", "manzana", "pera", "plátano", "banana", 
+ "naranja", "kiwi", "papaya", "mango", "uva", "fresa"]
+
 """
 
 nutritional_plan = r"""
