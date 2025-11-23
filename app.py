@@ -7,8 +7,6 @@ from dotenv import load_dotenv
 from nutria_core.chat_engine import ChatEngine
 from nutria_core.voice_utils import whisper_to_text, text_to_speech
 
-# Componente externo para grabar audio
-from audiorecorder import audiorecorder  # requiere streamlit-audiorecorder + pydub
 
 # =====================================================
 # CONFIG BÁSICA
