@@ -82,8 +82,8 @@ st.markdown(
   <h1>🥑 NutrIA</h1>
   <h3>Asistente Nutricional Inteligente</h3>
   <p style="color:#555;">
-    Te ayudo a entender la composición nutricional de los alimentos
-    Sustituir alimentos con opciones más saludables
+    Te ayudo a entender la composición nutricional de los alimentos\n\n
+    Sustituir alimentos con opciones más saludables\n\n
     Diseñar planes nutricionales basados en tu perfil
   </p>
 </div>
