@@ -200,49 +200,48 @@ with col_main:
 
             # 5) Redibujar inmediatamente
             st.rerun()
-
     # =================================================
-# TAB 2: VOZ (grabación nativa de Streamlit)
-# =================================================
-with tab_voice:
-    st.subheader("🎤 Habla con NutrIA")
+    # TAB 2: VOZ (grabación nativa de Streamlit)
+    # =================================================
+    with tab_voice:
+        st.subheader("🎤 Habla con NutrIA")
 
-    st.markdown("### 🎙️ Grabar audio desde el micrófono")
-    audio_input = st.audio_input("Pulsa el botón para grabar tu voz")
+        st.markdown("### 🎙️ Grabar audio desde el micrófono")
+        audio_input = st.audio_input("Pulsa el botón para grabar tu voz")
 
-    if audio_input is not None:
-        st.success("Audio grabado correctamente. Procesando...")
+        if audio_input is not None:
+            st.success("Audio grabado correctamente. Procesando...")
 
-        # Convertir audio a texto con Whisper
-        text = whisper_to_text(audio_input)
-        st.info(f"📝 Transcripción: {text}")
+            # Convertir audio a texto con Whisper
+            text = whisper_to_text(audio_input)
+            st.info(f"📝 Transcripción: {text}")
 
-        # Construcción de historial como pares
-        history_pairs = []
-        last_user = None
-        for m in st.session_state.dialog:
-            if m["role"] == "user":
-                last_user = m["content"]
-            elif m["role"] == "assistant" and last_user is not None:
-                history_pairs.append((last_user, m["content"]))
-                last_user = None
+            # Construcción de historial como pares
+            history_pairs = []
+            last_user = None
+            for m in st.session_state.dialog:
+                if m["role"] == "user":
+                    last_user = m["content"]
+                elif m["role"] == "assistant" and last_user is not None:
+                    history_pairs.append((last_user, m["content"]))
+                    last_user = None
 
-        # Chat LLM
-        respuesta = chat_engine.chat(text, history_pairs)
-        st.session_state.dialog.append({"role": "user", "content": text})
-        st.session_state.dialog.append({"role": "assistant", "content": respuesta})
+            # Chat LLM
+            respuesta = chat_engine.chat(text, history_pairs)
+            st.session_state.dialog.append({"role": "user", "content": text})
+            st.session_state.dialog.append({"role": "assistant", "content": respuesta})
 
-        st.success(f"🤖 Respuesta: {respuesta}")
+            st.success(f"🤖 Respuesta: {respuesta}")
 
-        # Convertir respuesta a audio
-        audio_out = text_to_speech(respuesta, voice="alloy")
+            # Convertir respuesta a audio
+            audio_out = text_to_speech(respuesta, voice="alloy")
 
-        if audio_out and os.path.exists(audio_out):
-            try:
-                with open(audio_out, "rb") as f:
-                    audio_bytes = f.read()
-                st.audio(audio_bytes, format="audio/mp3")
-            except Exception as e:
-                st.error(f"No pude reproducir el audio: {e}")
-        else:
-            st.warning("No pude generar audio de la respuesta...")
+            if audio_out and os.path.exists(audio_out):
+                try:
+                    with open(audio_out, "rb") as f:
+                        audio_bytes = f.read()
+                    st.audio(audio_bytes, format="audio/mp3")
+                except Exception as e:
+                    st.error(f"No pude reproducir el audio: {e}")
+            else:
+                st.warning("No pude generar audio de la respuesta...")
