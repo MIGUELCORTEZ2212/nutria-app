@@ -1,54 +1,61 @@
 import tempfile
+import os
 from typing import Optional
-
 from openai import OpenAI
 
-# Cliente global; usa OPENAI_API_KEY del entorno
 client = OpenAI()
 
-
 # ======================================================
-#  WHISPER → TEXTO
+#  WHISPER → TEXTO (Streamlit audio compatible)
 # ======================================================
 
-def whisper_to_text(file) -> str:
+def whisper_to_text(uploaded_audio) -> str:
     """
-    Convierte audio en texto usando Whisper.
+    Convierte audio grabado desde Streamlit en texto usando Whisper.
+    Acepta archivos tipo UploadedFile (audio_input).
+    """
 
-    - `file` puede ser un objeto tipo UploadedFile de Streamlit.
-    """
     try:
-        transcript = client.audio.transcriptions.create(
-            file=file,
-            model="whisper-1",
+        # Guardar audio temporalmente como archivo real
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+            tmp.write(uploaded_audio.read())
+            tmp_path = tmp.name
+
+        # Transcribir
+        result = client.audio.transcriptions.create(
+            file=open(tmp_path, "rb"),
+            model="gpt-4o-transcribe"
         )
-        return transcript.text
-    except Exception:
+
+        # Eliminar temporal
+        os.remove(tmp_path)
+
+        return result.text
+
+    except Exception as e:
+        print("ERROR EN WHISPER:", e)
         return "No pude transcribir el audio, intenta de nuevo o habla más claro."
 
 
 # ======================================================
-#  TEXTO → TTS (AUDIO)
+#  TEXTO → TTS (AUDIO en MP3)
 # ======================================================
 
-def text_to_speech(text: str, voice: str = "alloy") -> str | None:
+def text_to_speech(text: str, voice: str = "alloy") -> Optional[str]:
     """
-    Convierte texto en un archivo MP3 usando el modelo oficial
-    de Text-to-Speech de OpenAI.
-    Retorna la ruta del archivo generado o None si falla.
+    Convierte texto en audio MP3 con streaming.
+    Devuelve la ruta al archivo MP3 generado.
     """
+
     try:
-        # Crear respuesta de audio con el modelo correcto
         response = client.audio.speech.with_streaming_response.create(
-            model="gpt-4o-audio",   # ← MODELO CORRECTO
-            voice=voice,  # alloy / nova / shimmer / verse
+            model="gpt-4o-audio",
+            voice=voice,   # Voces válidas: alloy, nova, verse, shimmer
             input=text
         )
 
-        # Crear archivo temporal .mp3
+        # Guardar como archivo temporal .mp3
         tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-
-        # Guardar audio en el archivo
         response.stream_to_file(tmp_file.name)
 
         return tmp_file.name
