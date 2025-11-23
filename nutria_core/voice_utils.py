@@ -10,19 +10,14 @@ client = OpenAI()
 # ======================================================
 
 def whisper_to_text(uploaded_audio) -> str:
-    """
-    Convierte audio grabado desde Streamlit en texto usando Whisper.
-    """
     try:
-        # Guardar audio temporalmente
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             tmp.write(uploaded_audio.read())
             tmp_path = tmp.name
 
-        # Modelo correcto de whisper
         result = client.audio.transcriptions.create(
             file=open(tmp_path, "rb"),
-            model="gpt-4o-mini-transcribe"  # <-- Modelo correcto
+            model="gpt-4o-mini-transcribe"
         )
 
         os.remove(tmp_path)
@@ -34,24 +29,25 @@ def whisper_to_text(uploaded_audio) -> str:
 
 
 # ======================================================
-#  TEXTO → AUDIO MP3 (TTS)
+#  TEXTO → AUDIO (TTS) — versión correcta
 # ======================================================
 
 def text_to_speech(text: str, voice: str = "alloy") -> Optional[str]:
     """
-    Convierte texto a un archivo MP3 y devuelve la ruta temporal.
+    Convierte texto a MP3 con el modelo TTS y devuelve la ruta del archivo.
     """
     try:
-        # Modelo correcto de TTS con streaming
-        response = client.audio.speech.with_streaming_response.create(
-            model="gpt-4o-mini-tts",  # <-- ESTE ES EL BUENO
+        # Generar audio (regresa bytes)
+        audio_bytes = client.audio.speech.create(
+            model="gpt-4o-mini-tts",
             voice=voice,
             input=text,
         )
 
-        # Guardar como archivo .mp3
+        # Guardar temporalmente el MP3
         tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-        response.stream_to_file(tmp_file.name)
+        with open(tmp_file.name, "wb") as f:
+            f.write(audio_bytes)
 
         return tmp_file.name
 
