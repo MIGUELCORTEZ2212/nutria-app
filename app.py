@@ -82,8 +82,9 @@ st.markdown(
   <h1>🥑 NutrIA</h1>
   <h3>Asistente Nutricional Inteligente</h3>
   <p style="color:#555;">
-    Te ayudo a entender alimentos, sustituir opciones menos saludables y diseñar planes
-    basados en tus datos (edad, peso, estatura, actividad, objetivo, etc.).
+    Te ayudo a entender la composición nutricional de los alimentos
+    Sustituir alimentos con opciones más saludables
+    Diseñar planes nutricionales basados en tu perfil
   </p>
 </div>
 """,
@@ -102,10 +103,10 @@ with col_side:
     st.markdown("### 🧭 ¿Cómo puede ayudarte NutrIA?")
     st.markdown(
         """
-- 🔎 **Consulta alimentos**: “¿Qué tan saludable es el pan integral?”
-- 🔁 **Sustituye opciones**: “Quiero cambiar cereales azucarados del desayuno.”
-- 🧮 **Plan nutricional**: “Soy hombre, 32 años, 72kg, 1.78m, triatlón, objetivo rendimiento.”
-- 🧂 **Control de sodio, azúcar, grasas** según tus metas.
+- 🔎 **Consulta alimentos**: “¿Qué tan saludable es la quinoa?”
+- 🔁 **Sustituye opciones**: “Quiero cambiar el brocoli del desayuno.”
+- 🧮 **Plan nutricional**: “Soy hombre, 32 años, 72kg, 178cm, atletismo, objetivo rendimiento.”
+- 🧂 **Quiero bajar de peso.
         """
     )
 
@@ -210,48 +211,4 @@ with col_main:
             audio_out = text_to_speech(respuesta)
             st.audio(audio_out)
 
-        st.markdown("---")
-        st.markdown("### 📁 Subir archivo de audio (MP3/WAV)")
-        audio_file = st.file_uploader("Sube un archivo", type=["mp3", "wav"])
-
-        if audio_file is not None:
-            if st.button("Enviar archivo"):
-                text = whisper_to_text(audio_file)
-                st.info(f"📝 Transcripción: {text}")
-
-                # Historial como pares
-                history_pairs = []
-                last_user = None
-                for m in st.session_state.dialog:
-                    if m["role"] == "user":
-                        last_user = m["content"]
-                    elif m["role"] == "assistant" and last_user is not None:
-                        history_pairs.append((last_user, m["content"]))
-                        last_user = None
-
-                respuesta = chat_engine.chat(text, history_pairs)
-                st.session_state.dialog.append({"role": "user", "content": text})
-                st.session_state.dialog.append({"role": "assistant", "content": respuesta})
-
-                st.success(f"🤖 Respuesta: {respuesta}")
-                audio_out = text_to_speech(respuesta)
-                st.audio(audio_out)
-
-    # =================================================
-    # TAB 3: HISTORIAL
-    # =================================================
-    with tab_history:
-        st.subheader("📋 Historial de conversación")
-
-        if not st.session_state.dialog:
-            st.info("Aún no hay mensajes. Empieza a chatear en la pestaña 💬 Chat.")
-        else:
-            for msg in st.session_state.dialog:
-                icon = "🧑" if msg["role"] == "user" else "🤖"
-                who = "Usuario" if msg["role"] == "user" else "NutrIA"
-                st.markdown(f"**{icon} {who}:** {msg['content']}")
-
-        if st.button("🗑 Borrar historial"):
-            st.session_state.dialog = []
-            st.success("Historial eliminado.")
 
