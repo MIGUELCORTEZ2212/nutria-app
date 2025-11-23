@@ -236,6 +236,8 @@ with col_main:
             st.success(f"🤖 Respuesta: {respuesta}")
 
             audio_out = text_to_speech(respuesta)
+            st.write("Ruta audio generado:", audio_out)   # <--- agregar temporalmente
+
             if audio_out:
                 st.audio(audio_out)
             else:
