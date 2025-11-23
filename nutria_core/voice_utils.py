@@ -6,7 +6,7 @@ from openai import OpenAI
 client = OpenAI()
 
 # ======================================================
-#  WHISPER → TEXTO (Streamlit audio compatible)
+#  WHISPER → TEXTO
 # ======================================================
 
 def whisper_to_text(uploaded_audio) -> str:
@@ -14,27 +14,24 @@ def whisper_to_text(uploaded_audio) -> str:
     Convierte audio grabado desde Streamlit en texto usando Whisper.
     Acepta archivos tipo UploadedFile (audio_input).
     """
-
     try:
-        # Guardar audio temporalmente como archivo real
+        # Guardar el audio temporalmente
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             tmp.write(uploaded_audio.read())
             tmp_path = tmp.name
 
-        # Transcribir
+        # Transcribir (modelo correcto)
         result = client.audio.transcriptions.create(
             file=open(tmp_path, "rb"),
-            model="gpt-4o-transcribe"
+            model="gpt-4o-mini-transcribe"
         )
 
-        # Eliminar temporal
         os.remove(tmp_path)
-
         return result.text
 
     except Exception as e:
         print("ERROR EN WHISPER:", e)
-        return "No pude transcribir el audio, intenta de nuevo o habla más claro."
+        return "No pude transcribir el audio. Intenta de nuevo."
 
 
 # ======================================================
@@ -48,9 +45,10 @@ def text_to_speech(text: str, voice: str = "alloy") -> Optional[str]:
     """
 
     try:
+        # Modelo correcto para TTS streaming
         response = client.audio.speech.with_streaming_response.create(
-            model="gpt-4o-audio",
-            voice=voice,   # Voces válidas: alloy, nova, verse, shimmer
+            model="gpt-4o-mini-tts",
+            voice=voice,
             input=text
         )
 
