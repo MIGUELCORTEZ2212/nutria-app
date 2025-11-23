@@ -202,30 +202,30 @@ with col_main:
             st.rerun()
 
     # =================================================
-    # TAB 2: VOZ (grabación nativa de Streamlit)
-    # =================================================
-    with tab_voice:
-        st.subheader("🎤 Habla con NutrIA")
+# TAB 2: VOZ (grabación nativa de Streamlit)
+# =================================================
+with tab_voice:
+    st.subheader("🎤 Habla con NutrIA")
 
-        st.markdown("### 🎙️ Grabar audio desde el micrófono")
-        audio_input = st.audio_input("Pulsa el botón para grabar tu voz")
+    st.markdown("### 🎙️ Grabar audio desde el micrófono")
+    audio_input = st.audio_input("Pulsa el botón para grabar tu voz")
 
-        if audio_input is not None:
-            st.success("Audio grabado correctamente. Procesando...")
+    if audio_input is not None:
+        st.success("Audio grabado correctamente. Procesando...")
 
-            # Convertir audio a texto con Whisper
-            text = whisper_to_text(audio_input)
-            st.info(f"📝 Transcripción: {text}")
+        # Convertir audio a texto con Whisper
+        text = whisper_to_text(audio_input)
+        st.info(f"📝 Transcripción: {text}")
 
-            # Construcción de historial como pares
-            history_pairs = []
-            last_user = None
-            for m in st.session_state.dialog:
-                if m["role"] == "user":
-                    last_user = m["content"]
-                elif m["role"] == "assistant" and last_user is not None:
-                    history_pairs.append((last_user, m["content"]))
-                    last_user = None
+        # Construcción de historial como pares
+        history_pairs = []
+        last_user = None
+        for m in st.session_state.dialog:
+            if m["role"] == "user":
+                last_user = m["content"]
+            elif m["role"] == "assistant" and last_user is not None:
+                history_pairs.append((last_user, m["content"]))
+                last_user = None
 
         # Chat LLM
         respuesta = chat_engine.chat(text, history_pairs)
@@ -234,11 +234,10 @@ with col_main:
 
         st.success(f"🤖 Respuesta: {respuesta}")
 
-        # Generar audio TTS
+        # Convertir respuesta a audio
         audio_out = text_to_speech(respuesta, voice="alloy")
 
-        # 🔥 Reproducir audio correctamente en Streamlit Cloud
-        if audio_out:
+        if audio_out and os.path.exists(audio_out):
             try:
                 with open(audio_out, "rb") as f:
                     audio_bytes = f.read()
