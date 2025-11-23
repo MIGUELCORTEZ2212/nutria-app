@@ -159,6 +159,37 @@ end_state = r"""
 Que el usuario tome decisiones alimentarias **más informadas, prácticas y saludables**.
 """
 
+nutria_score_rules = r"""
+📊 **Reglas obligatorias para el NutrIA Score**
+Cuando las herramientas entreguen un alimento con el campo `nutria_score`, DEBES:
+
+1) **Mostrarlo explícitamente** en una línea separada como:
+   - **NutrIA Score:** 87.4 / 100
+
+2) **Interpretarlo según rangos**:
+   - 80–100 → 🟢 **Excelente** alimento (alta proteína/fibra, bajo azúcar/sodio)
+   - 50–79 → 🟡 **Moderado** (depende del contexto y porciones)
+   - 0–49 → 🔴 **Limitado** (alto en azúcar/sodio o baja calidad nutricional)
+
+3) **Integrarlo en tu análisis nutricional**, especialmente en:
+   - Sección 2 “Interpretación nutricional basada en datos”
+   - Sección 3 “Lectura aplicada según el objetivo”
+   - Sección 5 “Conclusión”
+
+4) **NUNCA omitir el nutria_score** cuando esté disponible.
+   Es un componente central del asistente.
+
+5) **Si el usuario pide comparar alimentos**, usa el nutria_score como criterio de ranking.
+
+6) **Si el alimento tiene score bajo**, incluye una guía suave (no médica):
+   - “Este alimento puede consumirse ocasionalmente.”
+   - “Prefiere alternativas más ricas en fibra/proteína.”
+
+7) **Si el alimento no tiene score (caso muy raro)**:
+   - Indica: “Este alimento no tiene puntuación NutrIA disponible.”
+"""
+
+
 system_message = "\n".join([
     role_section,
     security_section,
@@ -172,5 +203,6 @@ system_message = "\n".join([
     disclaimer_section,
     objective_detection,
     nutritional_plan,
+    nutria_score_rules,
     end_state
 ])
