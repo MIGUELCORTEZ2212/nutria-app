@@ -222,7 +222,7 @@ with col_main:
             last_user = None
             for m in st.session_state.dialog:
                 if m["role"] == "user":
-                     last_user = m["content"]
+                    last_user = m["content"]
                 elif m["role"] == "assistant" and last_user is not None:
                     history_pairs.append((last_user, m["content"]))
                     last_user = None
