@@ -155,7 +155,7 @@ with col_main:
             # 1) Mostrar mensaje del usuario
             st.session_state.dialog.append({"role": "user", "content": user_input})
 
-            # 2) Construir historial en pares (user, assistant) para el motor
+            # 2) Construir historial como pares
             history_pairs = []
             last_user = None
             for m in st.session_state.dialog:
@@ -165,16 +165,15 @@ with col_main:
                     history_pairs.append((last_user, m["content"]))
                     last_user = None
 
-            # 3) Llamar al motor de NutrIA
+             # 3) Llamar al motor
             respuesta = chat_engine.chat(user_input, history_pairs)
 
             # 4) Guardar respuesta
-            st.session_state.dialog.append(
-                {"role": "assistant", "content": respuesta}
-            )
+            st.session_state.dialog.append({"role": "assistant", "content": respuesta})
 
             # 5) Redibujar inmediatamente
             st.experimental_rerun()
+
 
         # =================================================
     # TAB 2: VOZ (grabación nativa de Streamlit)
