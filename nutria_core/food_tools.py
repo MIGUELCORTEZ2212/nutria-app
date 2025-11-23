@@ -27,23 +27,64 @@ def get_food_info(nombre_alimento: str):
 def get_nutrition_recommendations(objetivo, categoria=None, alimento_base=None, top_k=5):
     data = df.copy()
 
-    # Filtrar por categoría si aplica
-    if categoria and categoria.lower() != "todas":
-        data = data[data["categoria"].str.lower() == categoria.lower()]
+    # ---------------------------
+    # 1. Normalización segura
+    # ---------------------------
+    objetivo = (objetivo or "").strip().lower()
+    categoria = (categoria or "").strip().lower()
+    alimento_base = (alimento_base or "").strip().lower()
 
-    # Excluir alimento base si aplica
+    # ---------------------------
+    # 2. Filtrar categoría SI existe y NO es "todas"
+    # ---------------------------
+    if categoria and categoria != "todas":
+        data = data[data["categoria"].str.lower() == categoria]
+
+    # ---------------------------
+    # 3. Filtrar alimento base
+    # NO FILTRAR si viene vacío o None
+    # ---------------------------
     if alimento_base:
-        data = data[~data["alimento"].str.contains(alimento_base, case=False)]
+        data = data[~data["alimento"].str.lower().str.contains(alimento_base, na=False)]
 
-    # Orden por NutrIA score
-    # Asegurar columnas antes de calcular score
-    for col in ["proteina_g", "fibra_g", "azucar_g", "sodio_g", "energia_kcal", 
-            "lipidos_g", "hidratos_carbono_g"]:
+    # Si luego de filtros no queda nada → fallback
+    if data.empty:
+        return json.dumps({
+            "objetivo": objetivo,
+            "alimento_base": alimento_base,
+            "recomendaciones": [],
+            "warning": "No se encontraron alimentos para recomendar."
+        }, ensure_ascii=False)
+
+    # ---------------------------
+    # 4. Garantizar columnas
+    # ---------------------------
+    required = [
+        "proteina_g", "fibra_g", "azucar_g", "sodio_g",
+        "energia_kcal", "lipidos_g", "hidratos_carbono_g"
+    ]
+    for col in required:
         if col not in data.columns:
             data[col] = 0
         data[col] = data[col].fillna(0)
 
-    data["nutria_score"] = data.apply(lambda fila: calcular_nutria_score(fila), axis=1)
+    # ---------------------------
+    # 5. Cálculo robusto del score
+    # ---------------------------
+    data["nutria_score"] = data.apply(
+        lambda fila: calcular_nutria_score(fila),
+        axis=1
+    )
+
+    # ---------------------------
+    # 6. Top K alimentos
+    # ---------------------------
+    top = data.sort_values("nutria_score", ascending=False).head(top_k)
+    recomendaciones = [construir_foodinfo_score(row) for _, row in top.iterrows()]
+
+    # ---------------------------
+    # 7. Respuesta final
+    # ---------------------------
     payload = {
         "objetivo": objetivo,
         "alimento_base": alimento_base,
