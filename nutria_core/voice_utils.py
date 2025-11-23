@@ -33,20 +33,26 @@ def whisper_to_text(file) -> str:
 
 def text_to_speech(text: str) -> Optional[str]:
     """
-    Convierte texto en audio MP3 usando TTS de OpenAI.
-    Devuelve la ruta temporal del archivo generado o None si falla.
+    Convierte texto en audio MP3 usando el modelo oficial de TTS de OpenAI.
+    Devuelve la ruta temporal del archivo generado o None si hay error.
     """
     try:
-        speech = client.audio.speech.create(
-            model="gpt-4o-mini-tts",
+        response = client.audio.speech.with_streaming_response.create(
+            model="gpt-4o-audio",
             voice="Ash",
-            input=text,
+            input=text
         )
 
+        # Crear archivo temporal
+        import tempfile
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-        with open(tmp.name, "wb") as f:
-            f.write(speech.read())
+
+        # Guardar audio
+        response.stream_to_file(tmp.name)
 
         return tmp.name
-    except Exception:
+
+    except Exception as e:
+        print("ERROR TTS:", e)
         return None
+

@@ -135,7 +135,7 @@ Cuando el usuario no lo diga claro, infiere si busca:
 - qué fruta tiene mejor score
 - qué es lo más saludable
 - “ranking”
-- “cuál gan
+- “cuál gana
 """
 
 nutritional_plan = r"""
