@@ -52,42 +52,35 @@ def construir_foodinfo(fila):
 
 
 def calcular_nutria_score(fila):
-    # Extraer valores del alimento
-    prot = fila["proteina_g"]
-    fib = fila["fibra_g"]
-    carbs = fila["hidratos_carbono_g"]
-    azu = fila["azucar_g"]
-    sod = fila["sodio_g"]
-    lip = fila["lipidos_g"]
-    kcal = fila["energia_kcal"]
+    """
+    Calcula el NutrIA Score robusto, protegiendo contra valores faltantes.
+    """
 
-    # Percentiles positivos
-    p_prot = df["proteina_g"].rank(pct=True).iloc[fila.name]
-    p_fib = df["fibra_g"].rank(pct=True).iloc[fila.name]
-    
-    # Carbohidratos útiles: se premian valores moderados (no extremos)
-    # Fórmula: más cerca de la mediana = mejor
-    carbs_mediana = df["hidratos_carbono_g"].median()
-    p_carbs = max(0, 1 - abs(carbs - carbs_mediana) / (df["hidratos_carbono_g"].max() + 1))
+    # Obtener valores con fallback seguro
+    prot   = float(fila.get("proteina_g", 0) or 0)
+    fibra  = float(fila.get("fibra_g", 0) or 0)
+    azucar = float(fila.get("azucar_g", 0) or 0)
+    sodio  = float(fila.get("sodio_g", 0) or 0)
+    kcal   = float(fila.get("energia_kcal", 0) or 0)
 
-    # Percentiles negativos (inversos)
-    p_azu = 1 - df["azucar_g"].rank(pct=True).iloc[fila.name]
-    p_sod = 1 - df["sodio_g"].rank(pct=True).iloc[fila.name]
-    p_lip = 1 - df["lipidos_g"].rank(pct=True).iloc[fila.name]
-    p_kcal = 1 - df["energia_kcal"].rank(pct=True).iloc[fila.name]
+    # Nuevos nutrientes
+    lipidos = float(fila.get("lipidos_g", 0) or 0)
+    carbs   = float(fila.get("hidratos_carbono_g", 0) or 0)
 
-    # Ponderaciones (suman 100)
-    score = (
-        p_prot * 25 +
-        p_fib * 20 +
-        p_carbs * 10 +
-        p_azu * 20 +
-        p_sod * 10 +
-        p_lip * 10 +
-        p_kcal * 5
-    )
+    # ---------- Score positivo ----------
+    score = 0
+    score += min(prot / 30, 1) * 25          # Proteína
+    score += min(fibra / 10, 1) * 20         # Fibra
+    score += min((10 - lipidos) / 10, 1) * 5 # Grasas moderadas
+    score += min(carbs / 50, 1) * 5          # Carbohidratos de calidad
+
+    # ---------- Penalizaciones ----------
+    score += max(0, 1 - (azucar / 20)) * 20  # Azúcar
+    score += max(0, 1 - (sodio / 800)) * 15  # Sodio
+    score += max(0, 1 - (kcal / 600)) * 10   # Calorías
 
     return round(score, 1)
+
 
     # Normalizar a 100
     return round((total / 110) * 100, 1)
