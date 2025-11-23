@@ -178,51 +178,23 @@ with col_main:
             # 5) Redibujar inmediatamente
             st.experimental_rerun()
 
-    # =================================================
-    # TAB 2: VOZ (grabar + subir archivos)
+        # =================================================
+    # TAB 2: VOZ (grabación nativa de Streamlit)
     # =================================================
     with tab_voice:
-    st.subheader("🎤 Habla con NutrIA")
+        st.subheader("🎤 Habla con NutrIA")
 
-    st.markdown("### 🎙️ Grabar audio desde el micrófono")
-    audio_input = st.audio_input("Pulsa el botón para grabar tu voz")
+        st.markdown("### 🎙️ Grabar audio desde el micrófono")
+        audio_input = st.audio_input("Pulsa el botón para grabar tu voz")
 
-    if audio_input is not None:
-        st.success("Audio grabado correctamente. Procesando...")
+        if audio_input is not None:
+            st.success("Audio grabado correctamente. Procesando...")
 
-        # Whisper recibe un archivo-like. Streamlit lo da así directamente.
-        text = whisper_to_text(audio_input)
-        st.info(f"📝 Transcripción: {text}")
-
-        # Construcción de historial (pares)
-        history_pairs = []
-        last_user = None
-        for m in st.session_state.dialog:
-            if m["role"] == "user":
-                last_user = m["content"]
-            elif m["role"] == "assistant" and last_user is not None:
-                history_pairs.append((last_user, m["content"]))
-                last_user = None
-
-        respuesta = chat_engine.chat(text, history_pairs)
-        st.session_state.dialog.append({"role": "user", "content": text})
-        st.session_state.dialog.append({"role": "assistant", "content": respuesta})
-
-        st.success(f"🤖 Respuesta: {respuesta}")
-
-        audio_out = text_to_speech(respuesta)
-        st.audio(audio_out)
-
-    st.markdown("---")
-    st.markdown("### 📁 Subir archivo de audio (MP3/WAV)")
-    audio_file = st.file_uploader("Sube un archivo", type=["mp3", "wav"])
-
-    if audio_file is not None:
-        if st.button("Enviar archivo"):
-            text = whisper_to_text(audio_file)
+            # Whisper recibe un archivo-like directamente
+            text = whisper_to_text(audio_input)
             st.info(f"📝 Transcripción: {text}")
 
-            # Construcción de historial
+            # Construcción de historial como pares
             history_pairs = []
             last_user = None
             for m in st.session_state.dialog:
@@ -240,6 +212,33 @@ with col_main:
 
             audio_out = text_to_speech(respuesta)
             st.audio(audio_out)
+
+        st.markdown("---")
+        st.markdown("### 📁 Subir archivo de audio (MP3/WAV)")
+        audio_file = st.file_uploader("Sube un archivo", type=["mp3", "wav"])
+
+        if audio_file is not None:
+            if st.button("Enviar archivo"):
+                text = whisper_to_text(audio_file)
+                st.info(f"📝 Transcripción: {text}")
+
+                # Historial como pares
+                history_pairs = []
+                last_user = None
+                for m in st.session_state.dialog:
+                    if m["role"] == "user":
+                        last_user = m["content"]
+                    elif m["role"] == "assistant" and last_user is not None:
+                        history_pairs.append((last_user, m["content"]))
+                        last_user = None
+
+                respuesta = chat_engine.chat(text, history_pairs)
+                st.session_state.dialog.append({"role": "user", "content": text})
+                st.session_state.dialog.append({"role": "assistant", "content": respuesta})
+
+                st.success(f"🤖 Respuesta: {respuesta}")
+                audio_out = text_to_speech(respuesta)
+                st.audio(audio_out)
 
     # =================================================
     # TAB 3: HISTORIAL
