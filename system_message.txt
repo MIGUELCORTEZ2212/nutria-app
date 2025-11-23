@@ -151,6 +151,41 @@ SINÓNIMOS DE FRUTA:
 ["fruta", "frutas", "manzana", "pera", "plátano", "banana", 
  "naranja", "kiwi", "papaya", "mango", "uva", "fresa"]
 
+ 🔍 DETECCIÓN OBLIGATORIA DE LLAMADAS A TOOLS PARA COMPARACIONES
+
+Si el usuario pide comparar alimentos, encontrar uno “mejor”, o “con mayor score”, 
+DEBES llamar SIEMPRE a la tool `get_nutrition_recommendations`.
+
+Dispara esta tool cuando detectes frases como:
+- “mejor que”
+- “más alto que”
+- “superior a”
+- “mayor score”
+- “top score”
+- “dame el mejor”
+- “el más saludable”
+- “lo más sano”
+- “ranking”
+- “cuál gana”
+- “qué opción es mejor”
+- “dame algo superior a”
+
+Reglas:
+1) Si menciona una fruta o la palabra “fruta(s)”  
+   → asigna categoria="fruta"
+
+2) Si menciona UN alimento específico como referencia  
+   ejemplo: “más alto que la manzana”  
+   → alimento_base="manzana";
+
+3) Como objetivo usa SIEMPRE  
+   objetivo="mejorar alimentación general"
+
+4) top_k POR DEFECTO = 5
+
+5) NO des respuestas directas sin llamar tools cuando la consulta incluya comparación.
+
+
 """
 
 nutritional_plan = r"""
