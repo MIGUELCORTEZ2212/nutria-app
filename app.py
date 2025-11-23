@@ -207,7 +207,7 @@ with col_main:
     with tab_voice:
         st.subheader("🎤 Habla con NutrIA")
 
-        st.markdown("### 🎙️ Graba audio desde el micrófono")
+        st.markdown("### 🎙️ Grabar audio desde el micrófono")
         audio_input = st.audio_input("Pulsa el botón para grabar tu voz")
 
         if audio_input is not None:
@@ -229,19 +229,9 @@ with col_main:
 
             respuesta = chat_engine.chat(text, history_pairs)
             st.session_state.dialog.append({"role": "user", "content": text})
-            st.session_state.dialog.append(
-                {"role": "assistant", "content": respuesta}
-            )
+            st.session_state.dialog.append({"role": "assistant", "content": respuesta})
 
             st.success(f"🤖 Respuesta: {respuesta}")
 
             audio_out = text_to_speech(respuesta)
-            st.write("Ruta audio generado:", audio_out)   # <--- agregar temporalmente
-
-            if audio_out:
-                st.audio(audio_out)
-            else:
-                st.warning(
-                    "No pude generar audio de la respuesta. "
-                    "Puedes leerla directamente en el chat."
-                )
+            st.audio(audio_out)
