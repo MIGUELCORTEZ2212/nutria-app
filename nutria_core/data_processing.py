@@ -52,34 +52,42 @@ def construir_foodinfo(fila):
 
 
 def calcular_nutria_score(fila):
-    proteina = fila.get("proteina_g", 0) or 0
-    fibra = fila.get("fibra_g", 0) or 0
-    azucar = fila.get("azucar_g", 0) or 0
-    sodio = fila.get("sodio_g", 0) or 0
-    energia = fila.get("energia_kcal", 0) or 0
-    carbs = fila.get("hidratos_carbono_g", 0) or 0
-    lipidos = fila.get("lipidos_g", 0) or 0
+    # Extraer valores del alimento
+    prot = fila["proteina_g"]
+    fib = fila["fibra_g"]
+    carbs = fila["hidratos_carbono_g"]
+    azu = fila["azucar_g"]
+    sod = fila["sodio_g"]
+    lip = fila["lipidos_g"]
+    kcal = fila["energia_kcal"]
 
-    # COMPONENTES POSITIVOS
-    score_proteina = min(proteina / 30, 1) * 30
-    score_fibra = min(fibra / 10, 1) * 15
-    score_carbs = max(0, 1 - (carbs / 60)) * 10  # carbos moderados = mejor puntuación
+    # Percentiles positivos
+    p_prot = df["proteina_g"].rank(pct=True).iloc[fila.name]
+    p_fib = df["fibra_g"].rank(pct=True).iloc[fila.name]
+    
+    # Carbohidratos útiles: se premian valores moderados (no extremos)
+    # Fórmula: más cerca de la mediana = mejor
+    carbs_mediana = df["hidratos_carbono_g"].median()
+    p_carbs = max(0, 1 - abs(carbs - carbs_mediana) / (df["hidratos_carbono_g"].max() + 1))
 
-    # COMPONENTES NEGATIVOS
-    score_azucar = max(0, 1 - (azucar / 20)) * 20
-    score_sodio = max(0, 1 - (sodio / 800)) * 10
-    score_kcal = max(0, 1 - (energia / 600)) * 10
-    score_lipidos = max(0, 1 - (lipidos / 30)) * 15
+    # Percentiles negativos (inversos)
+    p_azu = 1 - df["azucar_g"].rank(pct=True).iloc[fila.name]
+    p_sod = 1 - df["sodio_g"].rank(pct=True).iloc[fila.name]
+    p_lip = 1 - df["lipidos_g"].rank(pct=True).iloc[fila.name]
+    p_kcal = 1 - df["energia_kcal"].rank(pct=True).iloc[fila.name]
 
-    total = (
-        score_proteina +
-        score_fibra +
-        score_carbs +
-        score_azucar +
-        score_sodio +
-        score_kcal +
-        score_lipidos
+    # Ponderaciones (suman 100)
+    score = (
+        p_prot * 25 +
+        p_fib * 20 +
+        p_carbs * 10 +
+        p_azu * 20 +
+        p_sod * 10 +
+        p_lip * 10 +
+        p_kcal * 5
     )
+
+    return round(score, 1)
 
     # Normalizar a 100
     return round((total / 110) * 100, 1)
