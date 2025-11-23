@@ -82,9 +82,7 @@ st.markdown(
   <h1>🥑 NutrIA</h1>
   <h3>Asistente Nutricional Inteligente</h3>
   <p style="color:#555;">
-    Te ayudo a entender la composición nutricional de los alimentos\n
-    Sustituir alimentos con opciones más saludables\n
-    Diseñar planes nutricionales basados en tu perfil
+    Composición nutricional de los alimentos. - Sustituir alimentos con opciones más saludables. - Diseñar planes nutricionales basados en tu perfil.
   </p>
 </div>
 """,
@@ -130,7 +128,7 @@ with col_side:
 # COLUMNA IZQUIERDA: CHAT + VOZ
 # -----------------------------------------------------
 with col_main:
-    tab_chat, tab_voice, tab_history = st.tabs(["💬 Chat", "🎤 Voz", "📋 Historial"])
+    tab_chat, tab_voice, tab_history = st.tabs(["💬 Chat", "🎤 Voz"])
 
     # =================================================
     # TAB 1: CHAT (con st.chat_input → Enter para enviar)
