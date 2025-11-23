@@ -233,5 +233,5 @@ with col_main:
 
             st.success(f"🤖 Respuesta: {respuesta}")
 
-            audio_out = text_to_speech(respuesta)
+            audio_out = text_to_speech(respuesta, voice="alloy")
             st.audio(audio_out)

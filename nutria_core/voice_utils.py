@@ -31,16 +31,28 @@ def whisper_to_text(file) -> str:
 #  TEXTO → TTS (AUDIO)
 # ======================================================
 
-def text_to_speech(text):
-    """Convierte texto en audio MP3 usando TTS."""
-    speech = client.audio.speech.create(
-        model="gpt-4o-audio",
-        voice="alloy",
-        input=text
-    )
+def text_to_speech(text: str, voice: str = "alloy") -> str | None:
+    """
+    Convierte texto en un archivo MP3 usando el modelo oficial
+    de Text-to-Speech de OpenAI.
+    Retorna la ruta del archivo generado o None si falla.
+    """
+    try:
+        # Crear respuesta de audio con el modelo correcto
+        response = client.audio.speech.with_streaming_response.create(
+            model="gpt-4o-audio",   # ← MODELO CORRECTO
+            voice=voice,  # alloy / nova / shimmer / verse
+            input=text
+        )
 
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-    with open(tmp.name, "wb") as f:
-        f.write(speech.read())
+        # Crear archivo temporal .mp3
+        tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
 
-    return tmp.name
+        # Guardar audio en el archivo
+        response.stream_to_file(tmp_file.name)
+
+        return tmp_file.name
+
+    except Exception as e:
+        print("ERROR GENERANDO AUDIO:", e)
+        return None
