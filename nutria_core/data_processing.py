@@ -1,10 +1,12 @@
 import pandas as pd
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
+from typing import Optional
 
 df = pd.read_csv("dataset_limpio.csv")
 
-# --------- Modelos Pydantic --------- #
+# =========================================================
+# Pydantic Models
+# =========================================================
 
 class FoodInfo(BaseModel):
     alimento: str
@@ -14,18 +16,22 @@ class FoodInfo(BaseModel):
     azucar_g: float
     sodio_g: float
     fibra_g: float
-    nutria_score: float
     medida: Optional[str] = None
     cantidad: Optional[float] = None
 
-class FoodInfoScore(FoodInfo):
-    score: float = Field(..., description="Puntaje NutrIA de 0 a 100")
 
-# --------- Funciones --------- #
+class FoodInfoScore(FoodInfo):
+    nutria_score: float = Field(..., description="Puntaje NutrIA de 0 a 100")
+
+
+# =========================================================
+# Helpers
+# =========================================================
 
 def buscar_alimento_por_nombre(nombre: str):
     candidatos = df[df["alimento"].str.contains(nombre, case=False, na=False)]
     return candidatos.iloc[0] if not candidatos.empty else None
+
 
 def construir_foodinfo(fila):
     return FoodInfo(
@@ -36,7 +42,10 @@ def construir_foodinfo(fila):
         azucar_g=float(fila["azucar_g"]),
         sodio_g=float(fila["sodio_g"]),
         fibra_g=float(fila["fibra_g"]),
+        medida=fila.get("medida"),
+        cantidad=fila.get("cantidad")
     )
+
 
 def calcular_nutria_score(fila):
     score = 0
@@ -47,6 +56,9 @@ def calcular_nutria_score(fila):
     score += max(0, 1 - (fila["energia_kcal"] / 600)) * 10
     return round(score, 1)
 
+
 def construir_foodinfo_score(fila):
     base = construir_foodinfo(fila)
-    return FoodInfoScore(**base.model_dump(), score=calcular_nutria_score(fila))
+    score = calcular_nutria_score(fila)
+    return FoodInfoScore(**base.model_dump(), nutria_score=score)
+
