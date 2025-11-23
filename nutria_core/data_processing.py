@@ -14,6 +14,9 @@ class FoodInfo(BaseModel):
     azucar_g: float
     sodio_g: float
     fibra_g: float
+    nutria_score: float
+    medida: Optional[str] = None
+    cantidad: Optional[float] = None
 
 class FoodInfoScore(FoodInfo):
     score: float = Field(..., description="Puntaje NutrIA de 0 a 100")

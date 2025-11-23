@@ -36,7 +36,7 @@ def get_nutrition_recommendations(objetivo, categoria=None, alimento_base=None, 
         data = data[~data["alimento"].str.contains(alimento_base, case=False)]
 
     # Orden por NutrIA score
-    data["nutria_score"] = data.apply(lambda x: construir_foodinfo_score(x).score, axis=1)
+    data["nutria_score"] = data.apply(lambda x: calcular_nutria_score(x), axis=1)
     data = data.sort_values("nutria_score", ascending=False)
 
     # Top K resultados
