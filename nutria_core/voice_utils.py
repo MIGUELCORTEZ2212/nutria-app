@@ -34,8 +34,8 @@ def whisper_to_text(file) -> str:
 def text_to_speech(text):
     """Convierte texto en audio MP3 usando TTS."""
     speech = client.audio.speech.create(
-        model="gpt-4o-mini-tts",
-        voice="Ash",
+        model="gpt-4o-audio",
+        voice="alloy",
         input=text
     )
 
