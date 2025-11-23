@@ -1,11 +1,12 @@
 import json
+import pandas as pd
 
 from .data_processing import (
+    df,
     buscar_alimento_por_nombre,
     construir_foodinfo,
     construir_foodinfo_score,
     calcular_nutria_score,
-    df,
 )
 from .nutritional_plan import DatosPaciente, generar_plan_nutricional
 
@@ -14,10 +15,9 @@ from .nutritional_plan import DatosPaciente, generar_plan_nutricional
 #  TOOL: get_food_info
 # ======================================================
 
-def get_food_info(nombre_alimento: str) -> str:
+def get_food_info(nombre_alimento: str):
     """
-    Devuelve la información nutricional de un alimento en formato JSON
-    incluyendo el NutrIA Score.
+    Devuelve información nutricional + NutrIA Score de un alimento.
     """
     fila = buscar_alimento_por_nombre(nombre_alimento)
     if fila is None:
@@ -39,48 +39,54 @@ def get_nutrition_recommendations(
     categoria: str = None,
     alimento_base: str = None,
     top_k: int = 5,
-) -> str:
+):
     """
-    Recomienda alimentos según un objetivo nutricional usando NutrIA Score.
-    Devuelve un JSON con 'objetivo', 'alimento_base' y lista de recomendaciones.
+    Recomienda alimentos usando NutrIA Score.
+    Incluye protección ante errores del usuario y del modelo.
     """
 
-    data = df.copy()
-
-    # ---------------------------
-    # 1. Normalización segura
-    # ---------------------------
+    # ------------------------------------------------------
+    # 0) Blindaje absoluto: normalizar y evitar valores None
+    # ------------------------------------------------------
     objetivo = (objetivo or "").strip().lower()
     categoria = (categoria or "").strip().lower()
     alimento_base = (alimento_base or "").strip().lower()
 
-    # ---------------------------
-    # 2. Filtrar categoría (si aplica)
-    # ---------------------------
+    # Si NO hay objetivo → default seguro
+    if objetivo == "":
+        objetivo = "mejorar alimentación general"
+
+    data = df.copy()
+
+    # ------------------------------------------------------
+    # 1) Filtrar por categoría (solo si realmente existe)
+    # ------------------------------------------------------
     if categoria and categoria != "todas":
         data = data[data["categoria"].str.lower() == categoria]
 
-    # ---------------------------
-    # 3. Excluir alimento base (si aplica)
-    # ---------------------------
+    # ------------------------------------------------------
+    # 2) Filtrar alimento base (solo si no viene vacío)
+    # ------------------------------------------------------
     if alimento_base:
         data = data[~data["alimento"].str.lower().str.contains(alimento_base, na=False)]
 
-    # Si no queda nada después de los filtros → fallback limpio
+    # ------------------------------------------------------
+    # 3) Si ya no queda nada, responder limpio
+    # ------------------------------------------------------
     if data.empty:
         return json.dumps(
             {
                 "objetivo": objetivo,
                 "alimento_base": alimento_base,
                 "recomendaciones": [],
-                "warning": "No se encontraron alimentos para recomendar.",
+                "warning": "No se encontraron alimentos para recomendar con esos filtros.",
             },
             ensure_ascii=False,
         )
 
-    # ---------------------------
-    # 4. Garantizar columnas numéricas
-    # ---------------------------
+    # ------------------------------------------------------
+    # 4) Garantizar todas las columnas del score
+    # ------------------------------------------------------
     required = [
         "proteina_g",
         "fibra_g",
@@ -90,39 +96,72 @@ def get_nutrition_recommendations(
         "lipidos_g",
         "hidratos_carbono_g",
     ]
+
     for col in required:
         if col not in data.columns:
             data[col] = 0
-        data[col] = data[col].fillna(0)
+        data[col] = pd.to_numeric(data[col], errors="coerce").fillna(0)
 
-    # ---------------------------
-    # 5. Cálculo robusto del score
-    # ---------------------------
-    data["nutria_score"] = data.apply(
-        lambda fila: calcular_nutria_score(fila),
-        axis=1,
+    # ------------------------------------------------------
+    # 5) Cálculo del NutrIA Score (a prueba de todo)
+    # ------------------------------------------------------
+    try:
+        data["nutria_score"] = data.apply(
+            lambda fila: calcular_nutria_score(fila),
+            axis=1,
+        )
+    except Exception as e:
+        # FALLBACK PARA QUE NUNCA TRUENE LA APP
+        return json.dumps(
+            {
+                "objetivo": objetivo,
+                "alimento_base": alimento_base,
+                "error": f"No se pudo calcular el NutrIA Score: {str(e)}",
+                "recomendaciones": [],
+            },
+            ensure_ascii=False,
+        )
+
+    # ------------------------------------------------------
+    # 6) Tomar top K alimentos
+    # ------------------------------------------------------
+    data = data.sort_values("nutria_score", ascending=False)
+    top = data.head(top_k)
+
+    recomendaciones = []
+    for _, row in top.iterrows():
+        try:
+            recomendaciones.append(construir_foodinfo_score(row).model_dump())
+        except Exception:
+            continue
+
+    # Último check para evitar listas vacías
+    if not recomendaciones:
+        return json.dumps(
+            {
+                "objetivo": objetivo,
+                "alimento_base": alimento_base,
+                "recomendaciones": [],
+                "warning": "No se pudieron construir las recomendaciones.",
+            },
+            ensure_ascii=False,
+        )
+
+    # ------------------------------------------------------
+    # 7) Respuesta final robusta
+    # ------------------------------------------------------
+    return json.dumps(
+        {
+            "objetivo": objetivo,
+            "alimento_base": alimento_base,
+            "recomendaciones": recomendaciones,
+        },
+        ensure_ascii=False,
     )
-
-    # ---------------------------
-    # 6. Top K alimentos por NutrIA Score
-    # ---------------------------
-    top = data.sort_values("nutria_score", ascending=False).head(top_k)
-    recomendaciones = [construir_foodinfo_score(row) for _, row in top.iterrows()]
-
-    # ---------------------------
-    # 7. Respuesta final estructurada
-    # ---------------------------
-    payload = {
-        "objetivo": objetivo,
-        "alimento_base": alimento_base,
-        "recomendaciones": [rec.model_dump() for rec in recomendaciones],
-    }
-
-    return json.dumps(payload, ensure_ascii=False)
 
 
 # ======================================================
-#  DEFINICIÓN DE LAS TOOLS PARA OPENAI
+#  DEFINICIÓN DE TOOLS
 # ======================================================
 
 tools = [
@@ -161,7 +200,7 @@ tools = [
         "type": "function",
         "function": {
             "name": "generar_plan_nutricional",
-            "description": "Genera un plan nutricional basado en TMB/TDEE.",
+            "description": "Genera un plan nutricional basado en TMB y TDEE.",
             "parameters": DatosPaciente.model_json_schema(),
         },
     },
