@@ -182,74 +182,64 @@ with col_main:
     # TAB 2: VOZ (grabar + subir archivos)
     # =================================================
     with tab_voice:
-        st.subheader("🎤 Habla con NutrIA")
+    st.subheader("🎤 Habla con NutrIA")
 
-        st.markdown("**Opción A – Grabar desde el micrófono**")
+    st.markdown("### 🎙️ Grabar audio desde el micrófono")
+    audio_input = st.audio_input("Pulsa el botón para grabar tu voz")
 
-        audio_rec = audiorecorder("🎙️ Grabar / Detener", "🔁 Reiniciar grabación")
+    if audio_input is not None:
+        st.success("Audio grabado correctamente. Procesando...")
 
-        if len(audio_rec) > 0:
-            st.audio(audio_rec.export().read(), format="audio/wav")
+        # Whisper recibe un archivo-like. Streamlit lo da así directamente.
+        text = whisper_to_text(audio_input)
+        st.info(f"📝 Transcripción: {text}")
 
-            if st.button("➡️ Enviar grabación a NutrIA"):
-                # Guardar a archivo temporal
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-                    audio_rec.export(tmp.name, format="wav")
-                    with open(tmp.name, "rb") as f:
-                        text = whisper_to_text(f)
-
-                st.info(f"📝 Transcripción: {text}")
-                # Construir historial como pares
-                history_pairs = []
+        # Construcción de historial (pares)
+        history_pairs = []
+        last_user = None
+        for m in st.session_state.dialog:
+            if m["role"] == "user":
+                last_user = m["content"]
+            elif m["role"] == "assistant" and last_user is not None:
+                history_pairs.append((last_user, m["content"]))
                 last_user = None
-                for m in st.session_state.dialog:
-                    if m["role"] == "user":
-                        last_user = m["content"]
-                    elif m["role"] == "assistant" and last_user is not None:
-                        history_pairs.append((last_user, m["content"]))
-                        last_user = None
 
-                respuesta = chat_engine.chat(text, history_pairs)
-                st.session_state.dialog.append({"role": "user", "content": text})
-                st.session_state.dialog.append(
-                    {"role": "assistant", "content": respuesta}
-                )
+        respuesta = chat_engine.chat(text, history_pairs)
+        st.session_state.dialog.append({"role": "user", "content": text})
+        st.session_state.dialog.append({"role": "assistant", "content": respuesta})
 
-                st.success(f"🤖 Respuesta: {respuesta}")
-                audio_out = text_to_speech(respuesta)
-                st.audio(audio_out)
+        st.success(f"🤖 Respuesta: {respuesta}")
 
-        st.markdown("---")
-        st.markdown("**Opción B – Subir archivo de audio (MP3/WAV)**")
+        audio_out = text_to_speech(respuesta)
+        st.audio(audio_out)
 
-        audio_file = st.file_uploader(
-            "Sube un archivo de audio", type=["mp3", "wav"]
-        )
+    st.markdown("---")
+    st.markdown("### 📁 Subir archivo de audio (MP3/WAV)")
+    audio_file = st.file_uploader("Sube un archivo", type=["mp3", "wav"])
 
-        if audio_file is not None:
-            if st.button("➡️ Enviar archivo a NutrIA"):
-                text = whisper_to_text(audio_file)
-                st.info(f"📝 Transcripción: {text}")
+    if audio_file is not None:
+        if st.button("Enviar archivo"):
+            text = whisper_to_text(audio_file)
+            st.info(f"📝 Transcripción: {text}")
 
-                # Historial en pares
-                history_pairs = []
-                last_user = None
-                for m in st.session_state.dialog:
-                    if m["role"] == "user":
-                        last_user = m["content"]
-                    elif m["role"] == "assistant" and last_user is not None:
-                        history_pairs.append((last_user, m["content"]))
-                        last_user = None
+            # Construcción de historial
+            history_pairs = []
+            last_user = None
+            for m in st.session_state.dialog:
+                if m["role"] == "user":
+                    last_user = m["content"]
+                elif m["role"] == "assistant" and last_user is not None:
+                    history_pairs.append((last_user, m["content"]))
+                    last_user = None
 
-                respuesta = chat_engine.chat(text, history_pairs)
-                st.session_state.dialog.append({"role": "user", "content": text})
-                st.session_state.dialog.append(
-                    {"role": "assistant", "content": respuesta}
-                )
+            respuesta = chat_engine.chat(text, history_pairs)
+            st.session_state.dialog.append({"role": "user", "content": text})
+            st.session_state.dialog.append({"role": "assistant", "content": respuesta})
 
-                st.success(f"🤖 Respuesta: {respuesta}")
-                audio_out = text_to_speech(respuesta)
-                st.audio(audio_out)
+            st.success(f"🤖 Respuesta: {respuesta}")
+
+            audio_out = text_to_speech(respuesta)
+            st.audio(audio_out)
 
     # =================================================
     # TAB 3: HISTORIAL
