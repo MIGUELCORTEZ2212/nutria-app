@@ -176,8 +176,8 @@ Cuando las herramientas entreguen un alimento con el campo `nutria_score`, DEBES
    - **NutrIA Score:** 87.4 / 100
 
 2) **Interpretarlo según rangos**:
-   - 80–100 → 🟢 **Excelente** alimento (alta proteína/fibra, bajo azúcar/sodio)
-   - 50–79 → 🟡 **Moderado** (depende del contexto y porciones)
+   - 70-100 → 🟢 **Excelente** alimento (alta proteína/fibra, bajo azúcar/sodio)
+   - 50–70 → 🟡 **Moderado** (depende del contexto y porciones)
    - 0–49 → 🔴 **Limitado** (alto en azúcar/sodio o baja calidad nutricional)
 
 3) **Integrarlo en tu análisis nutricional**, especialmente en:
