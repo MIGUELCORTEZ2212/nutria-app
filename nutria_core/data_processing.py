@@ -104,15 +104,15 @@ def calcular_nutria_score(fila) -> float:
 
     # ---- Componentes positivos ----
     score = 0.0
-    score += min(prot / 30.0, 1.0) * 25.0        # Proteína
-    score += min(fibra / 10.0, 1.0) * 20.0       # Fibra
-    score += max(0.0, (10.0 - lipidos) / 10.0) * 5.0  # Menos grasa es mejor
-    score += min(carbs / 50.0, 1.0) * 5.0        # Carbohidratos "útiles"
+    score += min(prot / 20.0, 1.0) * 25.0        # Proteína
+    score += min(fibra / 7.0, 1.0) * 20.0       # Fibra
+    score += max(0.0, (20.0 - lipidos) / 20.0) * 5.0  # Menos grasa es mejor
+    score += min(carbs / 60.0, 1.0) * 5.0        # Carbohidratos "útiles"
 
     # ---- Penalizaciones (invertidos) ----
-    score += max(0.0, 1.0 - (azucar / 20.0)) * 20.0   # Azúcar
-    score += max(0.0, 1.0 - (sodio / 800.0)) * 15.0   # Sodio
-    score += max(0.0, 1.0 - (kcal / 600.0)) * 10.0    # Kcal
+    score += max(0.0, 1.0 - (azucar / 35.0)) * 20.0   # Azúcar
+    score += max(0.0, 1.0 - (sodio / 1500))* 15.0  # Sodio
+    score += max(0.0, 1.0 - (kcal / 700.0)) * 10.0    # Kcal
 
     # Clamp a [0, 100]
     score = max(0.0, min(score, 100.0))
