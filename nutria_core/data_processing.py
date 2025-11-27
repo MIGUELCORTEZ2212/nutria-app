@@ -115,7 +115,7 @@ def calcular_nutria_score(fila) -> float:
     score += max(0.0, 1.0 - (kcal / 700.0)) * 10.0    # Kcal
 
     if kcal < 30:
-    score += 20
+        score += 20
 
     # Clamp a [0, 100]
     score = max(0.0, min(score, 100.0))
