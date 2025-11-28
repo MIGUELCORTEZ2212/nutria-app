@@ -87,7 +87,7 @@ if "dialog" not in st.session_state:
 # Motor LLM + tools
 chat_engine = ChatEngine(
     api_key=OPENAI_API_KEY,
-    model_llm="gpt-5-mini",
+    model_llm="gpt-4o-mini",
     system_message=open("system_message.txt", "r", encoding="utf-8").read(),
 )
 
